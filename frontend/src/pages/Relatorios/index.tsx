@@ -1,0 +1,71 @@
+import {
+  Archive,
+  ArrowRight,
+  BarChart3,
+  CircleDollarSign,
+  FileClock,
+  GraduationCap,
+} from "lucide-react";
+import { Button, PageHeader } from "../../components/common";
+
+const reports = [
+  {
+    icon: CircleDollarSign,
+    title: "Relatório financeiro",
+    text: "Entradas, despesas e saldo por período.",
+    color: "teal",
+  },
+  {
+    icon: GraduationCap,
+    title: "Relatório de alunos",
+    text: "Informações relacionadas aos alunos cadastrados.",
+    color: "blue",
+  },
+  {
+    icon: Archive,
+    title: "Relatório de patrimônio",
+    text: "Situação dos equipamentos e bens.",
+    color: "orange",
+  },
+  {
+    icon: FileClock,
+    title: "Relatório de movimentações",
+    text: "Histórico dos lançamentos financeiros.",
+    color: "navy",
+  },
+];
+export default function Reports() {
+  return (
+    <>
+      <PageHeader
+        title="Relatórios"
+        description="Gere relatórios para acompanhar as informações da AERA."
+      />
+      <section className="report-grid">
+        {reports.map(({ icon: Icon, title, text, color }) => (
+          <article className="report-card" key={title}>
+            <div className={`report-icon ${color}`}>
+              <Icon size={24} />
+            </div>
+            <h2>{title}</h2>
+            <p>{text}</p>
+            <Button variant="secondary">
+              Gerar relatório
+              <ArrowRight size={17} />
+            </Button>
+          </article>
+        ))}
+      </section>
+      <section className="report-tip">
+        <BarChart3 size={22} />
+        <div>
+          <strong>Relatórios prontos quando você precisar</strong>
+          <p>
+            Assim que houver registros, será possível selecionar filtros e gerar
+            relatórios detalhados.
+          </p>
+        </div>
+      </section>
+    </>
+  );
+}
