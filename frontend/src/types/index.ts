@@ -65,6 +65,14 @@ export type Asset = {
 
 export type AssetInput = Omit<Asset, 'id'> & { description?: string; photo?: File }
 
+export type AssetSummary = {
+  total: number
+  available: number
+  inUse: number
+  maintenance: number
+  damaged: number
+}
+
 export type FinancialTransaction = {
   id: string
   date: string

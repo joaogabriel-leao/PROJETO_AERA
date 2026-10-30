@@ -24,7 +24,9 @@ PROJETO_AERA/
 │   ├── src/main/java/br/com/aera/backend/
 │   │   └── BackendApplication.java   # Classe principal (ponto de entrada)
 │   ├── src/main/resources/
-│   │   └── application.properties     # Configurações (porta, context-path, banco)
+│   │   ├── application.properties       # Config comum + profile padrão (dev)
+│   │   ├── application-dev.properties    # Config de desenvolvimento
+│   │   └── application-prod.properties   # Config de produção (travada)
 │   ├── src/test/java/...              # Testes
 │   └── pom.xml                        # Dependências e build (Maven)
 │
@@ -44,7 +46,7 @@ PROJETO_AERA/
 [ Backend   ]  Spring Boot    → roda em http://localhost:8080/api
       │
       ▼
-[ Banco     ]  AINDA NÃO DEFINIDO pelo grupo
+[ Banco     ]  H2 em memória (desenvolvimento) — definitivo a definir pelo grupo
 ```
 
 O frontend concentra todas as chamadas de rede em `frontend/src/services/`.
@@ -77,12 +79,89 @@ mvn spring-boot:run
 
 A API ficará disponível em `http://localhost:8080/api`.
 
+> Ao rodar assim, a aplicação sobe no **profile `dev`** (é o padrão). Veja a
+> seção **"Ambientes (profiles dev/prod)"** abaixo para entender o que isso
+> significa e como rodar em produção.
+
 Outros comandos úteis:
 
 ```bash
-mvn clean test       # compila e roda os testes
+mvn clean test       # compila e roda os testes (usa o profile dev)
 mvn clean package    # gera o .jar em backend/target/
 ```
+
+---
+
+## Ambientes (profiles dev/prod) — backend
+
+O backend usa **Spring Profiles**: é o **mesmo código** que se comporta de
+forma diferente dependendo do ambiente. Não são dois projetos — é uma só
+aplicação com dois "modos" de execução.
+
+As configurações ficam divididas em três arquivos em
+`backend/src/main/resources/`:
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `application.properties` | Configuração **comum** aos dois ambientes (porta, context-path, CORS) e define o profile padrão (`dev`). |
+| `application-dev.properties` | Específico de **desenvolvimento**. |
+| `application-prod.properties` | Específico de **produção**. |
+
+### O que muda entre os ambientes
+
+| Configuração | `dev` (desenvolvimento) | `prod` (produção) |
+|--------------|-------------------------|-------------------|
+| Banco de dados | H2 em memória (fixo) | Lido de variáveis de ambiente (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`) |
+| Console web do H2 (`/api/h2-console`) | **Ligado** (fácil inspecionar dados) | **Desligado** (segurança) |
+| Logs de SQL (`show-sql`) | **Ligados** (ajudam a depurar) | **Desligados** (não vazar dados nos logs) |
+| Detalhes de erro nas respostas | Padrão | **Ocultados** (não expor stack trace) |
+| Origens de CORS | `localhost` | Definidas por `APP_CORS_ALLOWED_ORIGINS` |
+
+### Como rodar em cada ambiente
+
+```bash
+# Desenvolvimento (padrão — é o que você usa no dia a dia):
+cd backend
+mvn spring-boot:run
+#   equivalente a: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Produção (quando/se o sistema for publicado):
+mvn clean package
+java -jar target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
+
+> **No dia a dia, nada muda para quem desenvolve:** basta rodar
+> `mvn spring-boot:run` e a aplicação sobe em `dev`. O profile `prod` fica
+> **pronto e documentado** para o futuro, mas não é usado enquanto o projeto
+> roda localmente.
+
+### Variáveis de ambiente usadas em produção
+
+Em `prod`, segredos e configurações sensíveis **não ficam no código** — são
+lidos de variáveis de ambiente definidas no servidor:
+
+| Variável | Para quê | Exemplo |
+|----------|----------|---------|
+| `DB_URL` | URL de conexão do banco | `jdbc:postgresql://host:5432/aera` |
+| `DB_USERNAME` | Usuário do banco | `aera_app` |
+| `DB_PASSWORD` | Senha do banco | (secreta) |
+| `APP_CORS_ALLOWED_ORIGINS` | Domínios do frontend autorizados (separados por vírgula) | `https://aera.com.br` |
+
+> **Nota sobre o schema em produção:** hoje o `prod` usa
+> `spring.jpa.hibernate.ddl-auto=update` (o Hibernate cria/atualiza as tabelas),
+> porque o grupo ainda não adotou um banco definitivo nem *migrations*. Quando
+> isso acontecer (ex.: Flyway/Liquibase), o recomendado é trocar para
+> `validate` — mais seguro, pois o Hibernate apenas confere o schema sem
+> alterá-lo. Isso está comentado no próprio `application-prod.properties`.
+
+### ⚠️ Segurança: ponto em aberto para o grupo
+
+O backend **ainda não possui autenticação/autorização**. Hoje, qualquer
+requisição à API consegue criar, editar e excluir dados sem login. Como o
+sistema roda apenas em `localhost`, o risco atual é baixo — mas **antes de
+qualquer publicação, o grupo precisa decidir em conjunto** como será o controle
+de acesso, já que isso atravessa todos os módulos (alunos, patrimônio,
+financeiro).
 
 ### 2. Frontend (React + Vite)
 
@@ -125,25 +204,35 @@ para o frontend é embutido no build e fica visível no navegador.
 
 - [x] Estrutura do monorepo (frontend/ + backend/)
 - [x] Frontend React + Vite funcional
-- [x] Backend Spring Boot inicializável (Spring Web + Validation)
-- [ ] **Banco de dados**: ainda não definido pelo grupo.
-      O Spring Data JPA e os drivers (H2 / PostgreSQL / MySQL) estão
-      declarados mas **comentados** em `backend/pom.xml`. A aplicação sobe
-      sem banco. Para ativar, siga as instruções comentadas no `pom.xml` e
-      no `application.properties`.
-- [ ] Controllers / endpoints da API (a implementar)
+- [x] Backend Spring Boot inicializável (Spring Web + Validation + Data JPA)
+- [x] **Banco de dados (desenvolvimento)**: H2 em memória, já ativo via Spring
+      Data JPA. Decisão **temporária** do grupo enquanto o banco definitivo
+      (PostgreSQL/MySQL) não é escolhido. Como usamos JPA, a migração futura
+      exige apenas trocar o driver no `pom.xml` e ajustar o datasource.
+- [x] **Ambientes separados (profiles dev/prod)** — ver seção acima.
+- [x] **Módulo Patrimônio / Materiais**: CRUD completo implementado e integrado
+      ao frontend (listar, filtrar, paginar, detalhar, criar, editar, alterar
+      situação, excluir) + endpoint de resumo para o Dashboard.
+- [ ] Módulo Alunos (a implementar)
+- [ ] Módulo Financeiro (a implementar)
+- [ ] **Autenticação/Autorização**: ainda não implementada (ver aviso de
+      segurança acima).
+- [ ] Upload de foto no Patrimônio: previsto no frontend, **em stand-by** no
+      backend (o cadastro funciona com os demais campos).
 
 ### Contrato de API previsto (definido pelo frontend)
 
 Os endpoints que o backend precisará expor (ver `frontend/src/services/`):
 
-| Recurso        | Métodos               |
-|----------------|-----------------------|
-| `/alunos`      | GET, POST, PATCH      |
-| `/patrimonio`  | GET, POST, PATCH      |
-| `/visao-geral` | GET                   |
-| `/financeiro/resumo`        | GET      |
-| `/financeiro/movimentacoes` | GET, POST |
+| Recurso        | Métodos               | Status |
+|----------------|-----------------------|--------|
+| `/patrimonio`  | GET, POST, PATCH, DELETE | ✅ implementado |
+| `/patrimonio/{id}` | GET, PATCH, DELETE | ✅ implementado |
+| `/patrimonio/resumo` | GET             | ✅ implementado |
+| `/alunos`      | GET, POST, PATCH      | a implementar |
+| `/visao-geral` | GET                   | a implementar (o Dashboard já consome `/patrimonio/resumo`) |
+| `/financeiro/resumo`        | GET      | a implementar |
+| `/financeiro/movimentacoes` | GET, POST | a implementar |
 
 ---
 
