@@ -1,8 +1,9 @@
-import type { Asset, AssetInput, PageResult } from '../types'
+import type { Asset, AssetInput, AssetSummary, PageResult } from '../types'
 import { endpoints } from './endpoints'
 import { request } from './http'
 
 export const assetService = {
+  summary: () => request<AssetSummary>(`${endpoints.assets}/resumo`),
   list: (params: Record<string, string | number | undefined> = {}) => {
     const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined).map(([key, value]) => [key, String(value)]))
     return request<PageResult<Asset>>(`${endpoints.assets}${query.size ? `?${query}` : ''}`)
@@ -16,4 +17,5 @@ export const assetService = {
     return request<Asset>(endpoints.assets, { method: 'POST', body: formData })
   },
   update: (id: string, input: Partial<AssetInput>) => request<Asset>(`${endpoints.assets}/${encodeURIComponent(id)}`, { method: 'PATCH', body: input }),
+  delete: (id: string) => request<void>(`${endpoints.assets}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 }
