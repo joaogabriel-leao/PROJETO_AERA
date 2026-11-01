@@ -1,0 +1,21 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aera_financeiro}
+    username: ${DB_USER:aera}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  thymeleaf:
+    cache: false
+  flyway:
+    enabled: true

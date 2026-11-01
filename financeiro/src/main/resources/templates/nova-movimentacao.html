@@ -1,0 +1,9 @@
+<!DOCTYPE html><html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nova movimentação | AERA</title><link rel="stylesheet" th:href="@{/css/style.css}"></head><body>
+<header><strong>AERA Financeiro</strong><nav><a th:href="@{/movimentacoes}">Voltar</a></nav></header>
+<main class="narrow"><h1>Nova movimentação</h1><p>Cadastre contas e categorias em Configurações antes de lançar valores.</p><form class="card" th:action="@{/movimentacoes/salvar}" th:object="${form}" method="post"><p th:if="${#fields.hasErrors('*')}" class="error">Corrija os campos informados.</p>
+<label>Data<input type="date" th:field="*{dataMovimentacao}" required></label>
+<label>Tipo<select th:field="*{tipo}" required><option value="">Selecione</option><option th:each="t : ${tipos}" th:value="${t}" th:text="${t}"></option></select></label>
+<label>Conta<select th:field="*{contaId}" required><option value="">Selecione</option><option th:each="c : ${contas}" th:value="${c.id}" th:text="${c.nome}"></option></select></label>
+<label>Categoria<select th:field="*{categoriaId}" required><option value="">Selecione</option><option th:each="c : ${categorias}" th:value="${c.id}" th:text="${c.nome}"></option></select></label>
+<label>Valor (R$)<input type="number" min="0.01" step="0.01" th:field="*{valor}" required></label>
+<label>Descrição<input maxlength="500" th:field="*{descricao}" required></label><button type="submit">Salvar</button></form></main></body></html>
