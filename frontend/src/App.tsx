@@ -43,6 +43,7 @@ export default function App() {
         <Route path="/alunos" element={<StudentsList />} />
         <Route path="/alunos/novo" element={<StudentForm />} />
         <Route path="/alunos/:id" element={<StudentDetails />} />
+        <Route path="/alunos/:id/editar" element={<StudentForm />} />
         <Route path="/patrimonio" element={<AssetsList />} />
         <Route path="/patrimonio/novo" element={<AssetForm />} />
         <Route path="/patrimonio/:id" element={<AssetDetails />} />

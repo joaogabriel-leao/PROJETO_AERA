@@ -287,6 +287,51 @@ class StudentControllerTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.notes").value("Texto ficticio original"));
     }
 
+    @Test
+    void deveRetornarResumoParaAVisaoGeral() throws Exception {
+        mockMvc.perform(get("/api/alunos/resumo").contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.new").value(0));
+
+        mockMvc.perform(post("/api/alunos").contextPath("/api")
+                .contentType(MediaType.APPLICATION_JSON).content(payload().toString()))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/alunos").contextPath("/api")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload().put("status", "INATIVO").toString()))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/alunos/resumo").contextPath("/api"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.active").value(1))
+                .andExpect(jsonPath("$.inactive").value(1))
+                .andExpect(jsonPath("$.new").value(2));
+    }
+
+    @Test
+    void deveExcluirAlunoCom204EDepoisRetornar404() throws Exception {
+        var created = mockMvc.perform(post("/api/alunos").contextPath("/api")
+                        .contentType(MediaType.APPLICATION_JSON).content(payload().toString()))
+                .andExpect(status().isCreated()).andReturn();
+        String id = mapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/alunos/{id}", id).contextPath("/api"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/alunos/{id}", id).contextPath("/api"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/alunos/{id}", id).contextPath("/api"))
+                .andExpect(status().isNotFound());
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    void deveRetornar400ParaIdInvalidoNaExclusao() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/alunos/{id}", "nao-e-uuid").contextPath("/api"))
+                .andExpect(status().isBadRequest());
+    }
+
     @ParameterizedTest
     @CsvSource({"GET,''", "PATCH,''", "PATCH,/situacao"})
     void deveRetornar404ParaAlunoInexistente(String method, String suffix) throws Exception {

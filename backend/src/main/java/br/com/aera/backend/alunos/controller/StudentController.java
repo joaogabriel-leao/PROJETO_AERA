@@ -5,6 +5,7 @@ import br.com.aera.backend.alunos.dto.StudentCreateRequest;
 import br.com.aera.backend.alunos.dto.StudentDetailResponse;
 import br.com.aera.backend.alunos.dto.StudentPageResponse;
 import br.com.aera.backend.alunos.dto.StudentStatusUpdateRequest;
+import br.com.aera.backend.alunos.dto.StudentSummaryResponse;
 import br.com.aera.backend.alunos.dto.StudentUpdateRequest;
 import br.com.aera.backend.alunos.service.StudentService;
 import br.com.aera.backend.common.exception.ErrorResponse;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -36,7 +39,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  *
  * <p>BLOQUEADOR DE PRODUCAO: a aplicacao ainda nao possui autenticacao nem
  * autorizacao. Nao utilizar dados pessoais reais em producao antes de
- * implementar o controle de acesso. Nao ha exclusao definitiva nesta API.</p>
+ * implementar o controle de acesso. A exclusao (DELETE) e definitiva.</p>
  */
 @RestController
 @RequestMapping("/alunos")
@@ -62,6 +65,12 @@ public class StudentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return service.list(search, status, modality, page, size);
+    }
+
+    /** GET /api/alunos/resumo: totais (total, active, inactive, new) para a Visao Geral. */
+    @GetMapping("/resumo")
+    public StudentSummaryResponse summary() {
+        return service.summary();
     }
 
     /** GET /api/alunos/{id}: 200 com StudentDetailResponse; 404 se nao existir. */
@@ -100,6 +109,13 @@ public class StudentController {
     public StudentDetailResponse updateStatus(
             @PathVariable UUID id, @Valid @RequestBody StudentStatusUpdateRequest request) {
         return service.updateStatus(id, request.status());
+    }
+
+    /** DELETE /api/alunos/{id}: exclusao definitiva; 204 sem corpo, 404 se nao existir. */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        service.delete(id);
     }
 
     /** Complementa o handler global somente para validacoes da entrada deste modulo. */

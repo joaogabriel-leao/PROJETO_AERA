@@ -6,12 +6,14 @@ import br.com.aera.backend.alunos.dto.StudentCreateRequest;
 import br.com.aera.backend.alunos.dto.StudentDetailResponse;
 import br.com.aera.backend.alunos.dto.StudentListResponse;
 import br.com.aera.backend.alunos.dto.StudentPageResponse;
+import br.com.aera.backend.alunos.dto.StudentSummaryResponse;
 import br.com.aera.backend.alunos.dto.StudentUpdateRequest;
 import br.com.aera.backend.alunos.repository.StudentRepository;
 import br.com.aera.backend.common.exception.ResourceNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +39,7 @@ import org.springframework.validation.annotation.Validated;
 public class StudentService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final long NEW_STUDENT_DAYS = 30;
 
     private static final Set<String> OPTIONAL_FIELDS = Set.of(
             "sex",
@@ -197,6 +200,23 @@ public class StudentService {
         Student student = findOrThrow(id);
         student.setStatus(status);
         return StudentDetailResponse.from(repository.saveAndFlush(student));
+    }
+
+    /** Totais para a Visao Geral. "Novos" = cadastrados nos ultimos 30 dias. */
+    @Transactional(readOnly = true)
+    public StudentSummaryResponse summary() {
+        return new StudentSummaryResponse(
+                repository.count(),
+                repository.countByStatus(StudentStatus.ATIVO),
+                repository.countByStatus(StudentStatus.INATIVO),
+                repository.countByCreatedAtGreaterThanEqual(OffsetDateTime.now().minusDays(NEW_STUDENT_DAYS)));
+    }
+
+    /** Exclusao definitiva do cadastro. Lanca 404 (ResourceNotFoundException) se nao existir. */
+    @Transactional
+    public void delete(@NotNull UUID id) {
+        repository.delete(findOrThrow(id));
+        repository.flush();
     }
 
     private Student findOrThrow(UUID id) {

@@ -94,6 +94,31 @@ class StudentServiceTest {
         assertThat(repository.count()).isZero();
     }
 
+    @Test
+    void deveExcluirAlunoExistenteERejeitarNovaExclusao() {
+        StudentDetailResponse saved = service.create(createRequest(Map.of()));
+
+        service.delete(saved.id());
+
+        assertThat(repository.existsById(saved.id())).isFalse();
+        assertThatThrownBy(() -> service.delete(saved.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.getById(saved.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deveRejeitarExclusaoDeAlunoInexistente() {
+        assertThatThrownBy(() -> service.delete(UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deveRejeitarExclusaoSemId() {
+        assertThatThrownBy(() -> service.delete(null))
+                .isInstanceOf(ConstraintViolationException.class);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"consulta", "atualizacao", "situacao"})
     void deveTratarAlunoNaoEncontrado(String operation) {

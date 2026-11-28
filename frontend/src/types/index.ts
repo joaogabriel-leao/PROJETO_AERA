@@ -30,6 +30,7 @@ export type Student = {
 }
 
 export type StudentInput = Omit<Student, 'id' | 'code' | 'createdAt'> & {
+  sex?: string
   cpf?: string
   rg?: string
   address?: string
@@ -46,6 +47,12 @@ export type StudentInput = Omit<Student, 'id' | 'code' | 'createdAt'> & {
   notes?: string
   importantInformation?: string
 }
+
+/** Ficha completa devolvida por GET /alunos/{id}. Campos opcionais vazios chegam como null. */
+export type StudentDetail = Student & Omit<StudentInput, keyof Student>
+
+/** Campos que o PATCH aceita limpar explicitamente (necessario para datas). */
+export type StudentUpdateInput = Partial<StudentInput> & { clearFields?: string[] }
 
 export type Asset = {
   id: string
@@ -87,6 +94,8 @@ export type FinancialTransaction = {
 }
 
 export type FinancialTransactionInput = Omit<FinancialTransaction, 'id' | 'status'> & { attachment?: File }
+
+export type StudentSummary = DashboardSummary['students']
 
 export type DashboardSummary = {
   students: { total: number; active: number; inactive: number; new: number }
